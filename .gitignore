@@ -1,0 +1,15 @@
+.vscode
+
+*.o
+*.exe
+*.out
+
+*.png
+*.jpg
+*.jpeg
+*.bmp
+*.gif
+
+*.xml
+
+*.txt
