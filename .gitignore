@@ -12,4 +12,8 @@
 
 *.xml
 
-*.txt
+*.sh
+
+BackupProj
+pics
+build
