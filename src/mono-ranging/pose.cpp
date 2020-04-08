@@ -19,7 +19,7 @@ using namespace cv;
 
 int sq_x = 5;
 int sq_y = 7;
-double sq_len = 26; // 单位是mm
+double sq_len = 26; // 单位是m
 double mk_len = 18;
 int dict_flag = cv::aruco::DICT_4X4_50;
 
@@ -136,6 +136,8 @@ int main(int argc, char *argv[]) {
                 // cv::solvePnPRansac()
                 // cv::solvePnPRansac(object_coors, t_corners, camera_matrix, dist_coeffs, R, t);
                 cv::solvePnP(object_coors, t_corners, camera_matrix, dist_coeffs, R, t, false, CV_ITERATIVE);
+
+                // cout<<camera_matrix<<' '<<endl;
                 // cout<<R<<' '<<t<<endl;
                 
                 // 重投影检验一下
@@ -145,8 +147,41 @@ int main(int argc, char *argv[]) {
                 ori_pnt.push_back(cv::Point3f(0, 100, 0));
                 ori_pnt.push_back(cv::Point3f(100, 0, 0));
                 ori_pnt.push_back(cv::Point3f(0, 0, 100));
-                cv::projectPoints(ori_pnt, R, t, camera_matrix, dist_coeffs, reproj_point);
-                // cout<<reproj_point[0]<<endl;
+                // cv::projectPoints(ori_pnt, R, t, camera_matrix, dist_coeffs, reproj_point);
+
+                cv::Mat R_3x3, Rt_4x4(4, 4, CV_32F, cv::Scalar(0));
+                cv::Rodrigues(R, R_3x3);
+                R_3x3.convertTo(R_3x3, CV_32F);
+                t.convertTo(t, CV_32F);
+                camera_matrix.convertTo(camera_matrix, CV_32F);
+
+                for (int i=0; i<3; i++) {
+                    Rt_4x4.at<float>(i, 0) = R_3x3.at<float>(i, 0);
+                    Rt_4x4.at<float>(i, 1) = R_3x3.at<float>(i, 1);
+                    Rt_4x4.at<float>(i, 2) = R_3x3.at<float>(i, 2);
+                    Rt_4x4.at<float>(i, 3) = t.at<float>(i, 0);
+                }
+                Rt_4x4.at<float>(3, 3) = 1.0;
+
+                cv::Mat M_matrix(3, 4, CV_32F, cv::Scalar(0));
+                for (int i=0; i<3; i++) {
+                    M_matrix.at<float>(i, i) = 1;
+                }
+
+                M_matrix = camera_matrix*M_matrix*Rt_4x4;
+                // cout<<M_matrix<<endl;
+                // 自己投个影试试   
+                for (int i=0; i<ori_pnt.size(); i++) {
+                    cv::Mat t_pnt(4, 1, CV_32F, cv::Scalar(1));    
+                    t_pnt.at<float>(0, 0) = ori_pnt[i].x;
+                    t_pnt.at<float>(1, 0) = ori_pnt[i].y;
+                    t_pnt.at<float>(2, 0) = ori_pnt[i].z;
+
+                    cv::Mat t_res =  M_matrix * t_pnt;
+                    t_res /= t_res.at<float>(2, 0);
+                    cv::Point2f t_pres(t_res.at<float>(0, 0), t_res.at<float>(1, 0));
+                    reproj_point.push_back(t_pres);
+                }
 
                 cv::circle(frame, reproj_point[0], 5, cv::Scalar(0,255,255), 3);
                 cv::circle(frame, reproj_point[1], 5, cv::Scalar(0,0,0), 3);
@@ -159,6 +194,7 @@ int main(int argc, char *argv[]) {
                 // 艹，居然只支持32位浮点
                 R.convertTo(R, CV_32F);
                 t.convertTo(t, CV_32F);
+                cout<<t<<endl;
                 Affine3f pose(R, t);
                 window.showWidget("Camera",camer_coor);
                 window.setWidgetPose("Camera", pose);

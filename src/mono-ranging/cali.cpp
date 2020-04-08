@@ -4,7 +4,7 @@
 
 /**
  * run like  
-  ./cali yaya.txt -w=5 -h=7 -sl=26 -ml=18 -d=0 -sc=true -ci=1 -rs=true
+  ./cali yaya.txt -w=5 -h=7 -sl=0.026 -ml=0.018 -d=0 -sc=true -ci=1 -rs=true
 */
 
 #include <opencv2/highgui.hpp>
